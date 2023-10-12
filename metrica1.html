@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Resultados de la Consulta</title>
+</head>
+<body>
+    <table border="1">
+        <tr>
+            <th>Dept</th>
+            <th>Job</th>
+            <th>Q1</th>
+            <th>Q2</th>
+            <th>Q3</th>
+            <th>Q4</th>
+        </tr>
+        {% for fila in resultados %}
+        <tr>
+            <td>{{ fila.Dept }}</td>
+            <td>{{ fila.Job }}</td>
+            <td>{{ fila.Q1 }}</td>
+            <td>{{ fila.Q2 }}</td>
+            <td>{{ fila.Q3 }}</td>
+            <td>{{ fila.Q4 }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</body>
+</html>

@@ -1,4 +1,5 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template
+import sqlite3
 import pandas as pd
 from sqlalchemy import create_engine
 
@@ -41,6 +42,59 @@ def upload_data():
             df.to_sql(table_name, con=engine, if_exists='append', index=False)
 
             return jsonify({'message': 'Data cargada de manera exitosa'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/metric1', methods=['GET'])
+def get_metric1():
+    try:
+        # Conectar a la base de datos SQLite (asegúrate de tenerla en el directorio de tu proyecto o proporciona una ruta)
+        connection = sqlite3.connect('company.db')
+        cursor = connection.cursor()
+
+        # Realizar la consulta SQL
+        consulta = """
+                SELECT Dept, Job, 
+                count(Q1) as Q1,
+                count(Q2) as Q2, 
+                count(Q3) as Q3, 
+                count(Q4) as Q4
+                FROM(
+                SELECT B.department as Dept, C.job as Job, date(a.hired_date) as Fec_ing, strftime('%Y', a.hired_date) AS año, strftime('%m', a.hired_date) AS mes, 
+                CASE when strftime('%m', a.hired_date) in ('01','02','03') then 1 ELSE NULL END AS Q1,
+                CASE when strftime('%m', a.hired_date) in ('04','05','06') then 1 ELSE NULL END AS Q2,
+                CASE when strftime('%m', a.hired_date) in ('07','08','09') then 1 ELSE NULL END AS Q3,
+                CASE when strftime('%m', a.hired_date) in ('10','11','12') then 1 ELSE NULL END AS Q4
+                FROM employees A 
+                INNER JOIN departments B ON A.department_id = B.id
+                INNER JOIN jobs C ON A.job_id = C.id
+                WHERE strftime('%Y', a.hired_date) = '2021')
+                GROUP by Dept, Job
+                ORDER BY Dept, Job
+            """
+
+        cursor.execute(consulta)
+        resultados = cursor.fetchall()
+
+        # Cerrar la conexión a la base de datos
+        connection.close()
+
+        # Formatear los resultados y devolverlos como JSON
+        respuesta = []
+        for fila in resultados:
+            dept, job, q1, q2, q3, q4 = fila
+            respuesta.append({
+                'Dept': dept,
+                'Job': job,
+                'Q1': q1,
+                'Q2': q2,
+                'Q3': q3,
+                'Q4': q4
+            })
+
+        return jsonify(respuesta)
+        #return render_template('metrica1.html', resultados=respuesta)
+
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 

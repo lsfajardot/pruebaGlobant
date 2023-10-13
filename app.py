@@ -5,14 +5,12 @@ from sqlalchemy import create_engine
 
 app = Flask(__name__)
 
-# Configure your database connection
-DATABASE_URI = "sqlite:///company.db"  # Change this to your database URI
+DATABASE_URI = "sqlite:///company.db"
 engine = create_engine(DATABASE_URI)
 
 @app.route('/upload', methods=['POST'])
 def upload_data():
     try:
-        # Check if a file is attached to the request
         if 'file' not in request.files:
             return jsonify({'error': 'No existe archivo CSV'}), 400
 
@@ -23,14 +21,11 @@ def upload_data():
 
         if file:
             df = pd.read_csv(file, header=None)
-
-            # Check the name of the table
-            table_name = request.form.get('table_name')  # Add table_name field to your request
+            table_name = request.form.get('table_name')
 
             if table_name not in ['departments', 'jobs', 'employees']:
                 return jsonify({'error': 'Nombre de Tabla NO valido'}), 400
 
-            # Define column names explicitly (replace these with your actual column names)
             if table_name == 'departments':
                 df.columns = ['id', 'department']
             elif table_name == 'jobs':
@@ -38,7 +33,6 @@ def upload_data():
             elif table_name == 'employees':
                 df.columns = ['id', 'name', 'datetime', 'department_id', 'job_id']
 
-            # Insert data into the database using SQLAlchemy
             df.to_sql(table_name, con=engine, if_exists='append', index=False)
 
             return jsonify({'message': 'Data cargada de manera exitosa'}), 200
@@ -48,11 +42,9 @@ def upload_data():
 @app.route('/metric1', methods=['GET'])
 def get_metric1():
     try:
-        # Conectar a la base de datos SQLite (asegúrate de tenerla en el directorio de tu proyecto o proporciona una ruta)
         connection = sqlite3.connect('company.db')
         cursor = connection.cursor()
 
-        # Realizar la consulta SQL
         consulta = """
                 SELECT Dept, Job, 
                 count(Q1) as Q1,
@@ -75,11 +67,8 @@ def get_metric1():
 
         cursor.execute(consulta)
         resultados = cursor.fetchall()
-
-        # Cerrar la conexión a la base de datos
         connection.close()
 
-        # Formatear los resultados y devolverlos como JSON
         respuesta = []
         for fila in resultados:
             dept, job, q1, q2, q3, q4 = fila
@@ -93,7 +82,6 @@ def get_metric1():
             })
 
         return jsonify(respuesta)
-        #return render_template('metrica1.html', resultados=respuesta)
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -101,11 +89,9 @@ def get_metric1():
 @app.route('/metric2', methods=['GET'])
 def get_metric2():
     try:
-        # Conectar a la base de datos SQLite (asegúrate de tenerla en el directorio de tu proyecto o proporciona una ruta)
         connection = sqlite3.connect('company.db')
         cursor = connection.cursor()
 
-        # Realizar la consulta SQL
         consulta = """
                 select e.id, e.department, e.conteo as hired from (select b.id as id, b.department as department, d.media as media , count(a.id) as conteo 
                 from (select año, avg(conteo) as media from (SELECT b.id, b.department, strftime('%Y', a.hired_date) AS año, count(a.id) as conteo
@@ -124,11 +110,8 @@ def get_metric2():
 
         cursor.execute(consulta)
         resultados = cursor.fetchall()
-
-        # Cerrar la conexión a la base de datos
         connection.close()
 
-        # Formatear los resultados y devolverlos como JSON
         respuesta = []
         for fila in resultados:
             id, department, hired = fila
@@ -139,7 +122,6 @@ def get_metric2():
             })
 
         return jsonify(respuesta)
-        #return render_template('metrica1.html', resultados=respuesta)
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -148,5 +130,3 @@ def get_metric2():
 if __name__ == '__main__':
     app.run(debug=True)
 
-#Para ejecutar: python app.py desde la terminal
-#Para ingestar datos: curl -X POST -F "file=@departments.csv" -F "table_name=departments" http://localhost:5000/upload
